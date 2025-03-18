@@ -39,7 +39,7 @@ class Show(models.Model):
     base_price = models.FloatField()
 
     def __str__(self):
-        return(self.date_time)
+        return str(self.date_time)
 
 
 class Screen(models.Model):
