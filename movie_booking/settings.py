@@ -120,16 +120,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # EMAIL SETUP (SMTP Config)
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-
-# Email settings
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587  # TLS uses port 587
+EMAIL_PORT = 587  
 EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False  # Don't use SSL with port 587
+EMAIL_USE_SSL = False  
 EMAIL_HOST_USER = "amanxchau1@gmail.com"
 EMAIL_HOST_PASSWORD = "lvga zvhu ezfc cwbj"
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

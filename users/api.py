@@ -70,8 +70,9 @@ class UserViewSet(viewsets.ViewSet):
 
             user = authenticate(request, username=data.get('username'), email=data.get('email'), password=data.get('password'))
             if user:
-                login(request, user)
+                login(request, user , email=data.get('email'))
                 return Response({"success": True, "message": "Logged in successfully"}, status=status.HTTP_200_OK)
+
             else:
                 return Response({"success": False, "message": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
@@ -85,24 +86,6 @@ class UserViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=False, methods=['post'], url_path='request_otp/(?P<email>[^/.]+)')
-    def request_otp(self, request, email=None):
-        try:
-            if User.objects.filter(email=email).exists():
-                return Response({"success": False, "message": "Email is already taken"}, status=status.HTTP_400_BAD_REQUEST)
-
-            otp_secret = generate_otp_secret()
-            otp = generate_otp(otp_secret)
-
-            # Store the OTP secret in the session
-            request.session['otp_secret'] = otp_secret
-            request.session['otp_email'] = email
-
-            # Send OTP to the user's email
-            send_otp(email, otp, request.META.get('REMOTE_ADDR'))
-            return Response({"success": True, "message": "OTP sent successfully"}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['post'])
     def request_otp(self, request):
@@ -126,11 +109,40 @@ class UserViewSet(viewsets.ViewSet):
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-    @action(detail=False, methods=['get'], throttle_classes=[Anon5PerSecThrottle])
-    def check_username(self, request, user_name):
+    # @action(detail=False, methods=['get'])
+    # def check_username(self, request, user_name):
+    #     try:
+    #         if User.objects.filter(username=user_name).exists():
+    #             return Response({"success": False, "message": "taken"}, status=status.HTTP_200_OK)
+    #         return Response({"success": True, "message": "Username is available"}, status=status.HTTP_200_OK)
+    #     except Exception as e:
+    #         return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'], throttle_classes=[Anon5PerSecThrottle])
+    def register(self, request):
         try:
-            if User.objects.filter(username=user_name).exists():
-                return Response({"success": False, "message": "taken"}, status=status.HTTP_200_OK)
-            return Response({"success": True, "message": "Username is available"}, status=status.HTTP_200_OK)
+            serializer = RegisterSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            data = serializer.validated_data
+
+            otp_secret = request.session.get('otp_secret')
+            otp_email = request.session.get('otp_email')
+
+            if not otp_secret or otp_email != data.get('email'):
+                return Response({"success": False, "message": "OTP verification failed"}, status=status.HTTP_400_BAD_REQUEST)
+
+            totp = pyotp.TOTP(otp_secret, interval=300)
+            if totp.verify(data.get('otp')):
+                User.objects.create_user(
+                    fullname=data.get('fullname'),
+                    username=data.get('username'),
+                    email=data.get('email'),
+                    password=data.get('password'),
+                )
+                del request.session['otp_secret']
+                del request.session['otp_email']
+                return Response({"success": True, "message": "User registered successfully"}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"success": False, "message": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
