@@ -8,3 +8,8 @@ admin.site.register(Genre)
 admin.site.register(Show)
 admin.site.register(Screen)
 admin.site.register(Seat)
+
+list_display = ['title' , 'release_datetime' , 'language' , 'duration']
+list_filter = ['language' , 'genre']
+search_fields = ['title' , 'description']
+
