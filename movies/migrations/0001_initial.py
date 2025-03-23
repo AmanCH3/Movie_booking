@@ -45,10 +45,10 @@ class Migration(migrations.Migration):
                 ('poster', models.URLField(max_length=100)),
                 ('backdrop', models.URLField(max_length=100)),
                 ('release_datetime', models.CharField(max_length=100)),
-                ('language', models.CharField(max_length=100)),
+                ('language', models.ForeignKey(to='movies.language', on_delete=django.db.models.deletion.CASCADE)),
                 ('imdb_page', models.URLField()),
                 ('genre', models.ManyToManyField(to='movies.genre')),
-            ],
+            ],  
         ),
         migrations.CreateModel(
             name='Show',

@@ -94,8 +94,8 @@ class ShowViewSet(viewsets.ViewSet):
                     return Response({"success": False, "message": "Show time is in the past."}, status=status.HTTP_400_BAD_REQUEST)
 
                 overlapping_shows = Show.objects.filter (
-                    screen__number=data['screen_number'],
-                    date_time__range=(data['date_time'] - timedelta(minutes=180), data['date_time'] + timedelta(minutes=180)))
+                    screen__number = data['screen_number'],
+                    date_time__range = (data['date_time'] - timedelta(minutes=180), data['date_time'] + timedelta(minutes=180)))
                 if overlapping_shows.exists():
                     return Response({"success": False, "message": "This show overlaps with another show."}, status=status.HTTP_400_BAD_REQUEST)
 

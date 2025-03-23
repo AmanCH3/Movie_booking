@@ -10,7 +10,7 @@ class Movie(models.Model):
     poster = models.URLField(max_length=100)
     backdrop = models.URLField(max_length=100)
     release_datetime = models.CharField(max_length=100)
-    language = models.CharField(max_length=100)
+    language = models.ForeignKey('Language', on_delete=models.CASCADE)
     genre = models.ManyToManyField('Genre')
     imdb_page  = models.URLField(max_length=200)
 
