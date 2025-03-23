@@ -19,24 +19,19 @@ import logging
 
 core_logger = logging.getLogger('users')
 
-# Throttling classes
-class Anon5PerSecThrottle(AnonRateThrottle):
-    rate = '5/second'
 
-class User10PerSecThrottle(UserRateThrottle):
-    rate = '10/second'
 
 # User ViewSet
 class UserViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]  # Allow any user to access these endpoints
 
-    @action(detail=False, methods=['get'], throttle_classes=[Anon5PerSecThrottle])
+    @action(detail=False, methods=['get'])
     def add(self, request):
         a = int(request.query_params.get('a', 0))
         b = int(request.query_params.get('b', 0))
         return Response({"success": True, "message": a + b}, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], throttle_classes=[User10PerSecThrottle])
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def user(self, request):
         try:
             serializer = UserDetailSerializer(request.user)
@@ -44,7 +39,7 @@ class UserViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=False, methods=['get'], throttle_classes=[Anon5PerSecThrottle])
+    @action(detail=False, methods=['get'])
     def get_csrf_token(self, request):
         try:
             serializer = CSRFTokenSerializer({'csrf_token': get_token(request)})
@@ -52,7 +47,7 @@ class UserViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated], throttle_classes=[User10PerSecThrottle])
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def refill_balance(self, request):
         try:
             request.user.balance = 1500
@@ -61,7 +56,7 @@ class UserViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=False, methods=['post'], throttle_classes=[Anon5PerSecThrottle])
+    @action(detail=False, methods=['post'])
     def login(self, request):
         try:
             serializer = SignInSerializer(data=request.data)
@@ -70,15 +65,15 @@ class UserViewSet(viewsets.ViewSet):
 
             user = authenticate(request, username=data.get('username'), email=data.get('email'), password=data.get('password'))
             if user:
-                login(request, user , email=data.get('email'))
+                # Remove the email parameter here
+                login(request, user)
                 return Response({"success": True, "message": "Logged in successfully"}, status=status.HTTP_200_OK)
-
             else:
                 return Response({"success": False, "message": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated], throttle_classes=[User10PerSecThrottle])
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def logout(self, request):
         try:
             logout(request)
@@ -118,7 +113,7 @@ class UserViewSet(viewsets.ViewSet):
     #     except Exception as e:
     #         return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=False, methods=['post'], throttle_classes=[Anon5PerSecThrottle])
+    @action(detail=False, methods=['post'])
     def register(self, request):
         try:
             serializer = RegisterSerializer(data=request.data)
@@ -127,12 +122,23 @@ class UserViewSet(viewsets.ViewSet):
 
             otp_secret = request.session.get('otp_secret')
             otp_email = request.session.get('otp_email')
+            
+            # Add debugging logs
+            core_logger.debug(f"OTP Secret in session: {otp_secret}")
+            core_logger.debug(f"Email in session: {otp_email}")
+            core_logger.debug(f"Email in request: {data.get('email')}")
+            core_logger.debug(f"OTP in request: {data.get('otp')}")
 
             if not otp_secret or otp_email != data.get('email'):
                 return Response({"success": False, "message": "OTP verification failed"}, status=status.HTTP_400_BAD_REQUEST)
 
             totp = pyotp.TOTP(otp_secret, interval=300)
-            if totp.verify(data.get('otp')):
+            
+            # Verify with debugging
+            is_valid = totp.verify(data.get('otp'))
+            core_logger.debug(f"OTP verification result: {is_valid}")
+            
+            if is_valid:
                 User.objects.create_user(
                     fullname=data.get('fullname'),
                     username=data.get('username'),
@@ -143,6 +149,10 @@ class UserViewSet(viewsets.ViewSet):
                 del request.session['otp_email']
                 return Response({"success": True, "message": "User registered successfully"}, status=status.HTTP_201_CREATED)
             else:
+                # Generate a current valid OTP for debugging
+                current_otp = totp.now()
+                core_logger.debug(f"Current valid OTP would be: {current_otp}")
                 return Response({"success": False, "message": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            core_logger.error(f"Registration error: {str(e)}")
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

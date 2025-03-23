@@ -154,3 +154,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 AUTH_USER_MODEL = 'users.User'
+
+#Session based authentication
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # or your preferred storage
+SESSION_COOKIE_SECURE = False  # Set to True only if using HTTPS
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_AGE = 3600  # 1 hour in seconds, adjust as needed
