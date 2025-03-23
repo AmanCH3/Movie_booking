@@ -37,7 +37,7 @@ class ShowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Show
-        fields = ['id', 'date_time', 'movie', 'screen', 'base_price', 'seats']
+        fields = ['id','date_time', 'movie', 'screen', 'base_price', 'seats']
 
 class AddShowSerializer(serializers.Serializer):
     imdb_id = serializers.CharField()

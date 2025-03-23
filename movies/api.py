@@ -33,12 +33,14 @@ class MovieViewSet(viewsets.ViewSet):
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['get'])
-    def get_movie_shows(self, request, imdb_id=None):
+    def get_movie_shows(self, request , imdb_id = None ):
         try:
-            movie = Movie.objects.get(imdb_id=imdb_id)
+            movie = Movie.objects.get(imdb_id= imdb_id)
             shows = Show.objects.filter(movie=movie)
             serializer = ShowSerializer(shows, many=True)
-            return Response({"success": True, "message": serializer.data}, status=status.HTTP_200_OK)
+            return Response({"success": True, "message": "Shows fetched successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+        except Movie.DoesNotExist:
+            return Response({"success": False, "message": "Movie not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -73,7 +75,7 @@ class ShowViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def get_show_seats(self, request, show_id=None):
         try:
-            show = Show.objects.get(id=show_id)
+            show = Show.objects.all().get(id=show_id)
             seats = Seat.objects.filter(show=show)
             serializer = SeatSerializer(seats, many=True)
             return Response({"success": True, "message": serializer.data}, status=status.HTTP_200_OK)
