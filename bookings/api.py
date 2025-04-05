@@ -34,10 +34,10 @@ class BookingViewSet(viewsets.ModelViewSet):
         """
         try:
             # Fetch all bookings for the current user
-            allbookings = allUserBookings.objects.filter(user=request.user)
+            allbookings = allUserBookings.objects.all()
             # Serialize the bookings
             serializer = allUserBookingSerializer(allbookings, many=True)
-            return Response({"success": True, "message": serializer.data}, status=status.HTTP_200_OK)
+            return Response({"success": True, "message": "Booking Fetched Succesfully" ,"data" : serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
             # Handle any exceptions and return an error response
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -198,7 +198,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             # Handle any exceptions and return an error response
             return Response({"success": False, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    @csrf_exempt  # ✅ Not required in DRF but included for safety
+    @csrf_exempt  
     @action(detail=True, methods=['post'])
     def send_tickets(self, request, pk=None):
         try:
